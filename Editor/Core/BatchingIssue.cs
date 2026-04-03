@@ -12,6 +12,8 @@ namespace BatchSight.Core
         SRPIncompatible,
         MaterialPropertyBlock,
         UniqueMaterialInstance,
-        PrefabInstance
+        PrefabInstance,
+        LODMismatch,
+        ShadowMismatch
     }
 }

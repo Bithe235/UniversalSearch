@@ -26,7 +26,7 @@ namespace BatchSight.Core
             catch { }
         }
 
-        public static void EnableGPUInstancing(BatchingReport report)
+        public static void EnableGPUInstancing(BatchingReport report, bool silent = false)
         {
             if (report == null || report.renderer == null) return;
             var mats = report.renderer.sharedMaterials;
@@ -49,12 +49,14 @@ namespace BatchSight.Core
                     continue;
                 }
 
+                if (m.enableInstancing) continue;
+
                 Undo.RecordObject(m, "BatchSight: Enable GPU Instancing");
                 m.enableInstancing = true;
                 EditorUtility.SetDirty(m);
             }
 
-            if (anySkipped)
+            if (anySkipped && !silent)
             {
                 EditorUtility.DisplayDialog(
                     "BatchSight",

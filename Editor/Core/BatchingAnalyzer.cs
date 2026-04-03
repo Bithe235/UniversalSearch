@@ -96,6 +96,15 @@ namespace BatchSight.Core
                 }
             }
 
+            // PROPERTY BLOCK CHECK
+            bool hasBlock = false;
+            try { hasBlock = r.HasPropertyBlock(); } catch { }
+            if (hasBlock)
+            {
+                if (!rep.issues.Contains(BatchingIssue.MaterialPropertyBlock)) rep.issues.Add(BatchingIssue.MaterialPropertyBlock);
+                rep.status = BatchingStatus.Red;
+            }
+
             if (pipeline != "Built-in")
             {
                 try
@@ -113,17 +122,37 @@ namespace BatchSight.Core
             try
             {
                 var myIndex = r.lightmapIndex;
+                var myShadowMode = r.shadowCastingMode;
+                var inLOD = r.GetComponentInParent<LODGroup>() != null;
+
                 foreach (var other in allRenderers)
                 {
                     if (other == null || other == r) continue;
                     if (other.GetType() != r.GetType()) continue;
                     if (other.sharedMaterial == null || r.sharedMaterial == null) continue;
-                    if (other.sharedMaterial == r.sharedMaterial && other.lightmapIndex != myIndex)
+
+                    if (other.sharedMaterial == r.sharedMaterial)
                     {
-                        if (!rep.issues.Contains(BatchingIssue.DifferentLightmap)) rep.issues.Add(BatchingIssue.DifferentLightmap);
-                        rep.status = BatchingStatus.Red;
-                        break;
+                        // LIGHTMAP MISMATCH
+                        if (other.lightmapIndex != myIndex)
+                        {
+                            if (!rep.issues.Contains(BatchingIssue.DifferentLightmap)) rep.issues.Add(BatchingIssue.DifferentLightmap);
+                            rep.status = BatchingStatus.Red;
+                        }
+
+                        // SHADOW MODE MISMATCH
+                        if (other.shadowCastingMode != myShadowMode)
+                        {
+                            if (!rep.issues.Contains(BatchingIssue.ShadowMismatch)) rep.issues.Add(BatchingIssue.ShadowMismatch);
+                            rep.status = BatchingStatus.Red;
+                        }
                     }
+                }
+
+                if (inLOD && rep.status != BatchingStatus.Red)
+                {
+                    if (!rep.issues.Contains(BatchingIssue.LODMismatch)) rep.issues.Add(BatchingIssue.LODMismatch);
+                    if (rep.status != BatchingStatus.Red) rep.status = BatchingStatus.Yellow;
                 }
             }
             catch { }
