@@ -22,6 +22,7 @@ namespace BatchSight.UI
         Toggle showGreenToggle, showYellowToggle, showRedToggle;
         Label healthLabel;
         VisualElement healthBarFill;
+        TextField searchField;
 
         void OnEnable()
         {
@@ -45,8 +46,7 @@ namespace BatchSight.UI
             var exportBtn = new Button(() => { ExportReport(); }) { text = "Export" };
             toolbar.Add(exportBtn);
 
-            searchField = new TextField();
-            searchField.placeholderText = "Search renderers...";
+            searchField = new TextField("Search:");
             searchField.style.flexGrow = 1;
             searchField.style.marginLeft = 8;
             searchField.RegisterValueChangedCallback(evt => RefreshList());
@@ -284,6 +284,30 @@ namespace BatchSight.UI
             healthLabel.text = $"Scene Health: {Mathf.RoundToInt(pct * 100)}%";
             healthBarFill.style.width = Length.Percent(pct * 100f);
             healthBarFill.style.backgroundColor = Color.Lerp(Color.red, Color.green, pct);
+        }
+
+        void ExportReport()
+        {
+            var path = EditorUtility.SaveFilePanel("Save Report", "", "UniversalSearch_Report.md", "md");
+            if (string.IsNullOrEmpty(path)) return;
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("# UniversalSearch Analysis Report");
+            sb.AppendLine($"Date: {System.DateTime.Now}");
+            sb.AppendLine($"Scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}");
+            sb.AppendLine();
+            sb.AppendLine("| Renderer | Status | Issues |");
+            sb.AppendLine("| :--- | :--- | :--- |");
+
+            foreach (var r in displayed)
+            {
+                string status = r.status == BatchingStatus.Green ? "Green" : r.status == BatchingStatus.Yellow ? "Yellow" : "Red";
+                string issues = string.Join(", ", r.issues);
+                sb.AppendLine($"| {r.Name} | {status} | {issues} |");
+            }
+
+            System.IO.File.WriteAllText(path, sb.ToString());
+            EditorUtility.RevealInFinder(path);
         }
 
         void OnDisable()
